@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 )
 
 // question struct stores a single question and its corresponding answer.
@@ -38,7 +39,7 @@ func questions() []question {
 }
 
 // ask asks a question and returns an updated score depending on the answer.
-func ask(s score, question question) score {
+func ask(s score, question question, answer chan score) {
 	fmt.Println(question.q)
 	scanner := bufio.NewScanner(os.Stdin)
 	fmt.Print("Enter answer: ")
@@ -50,14 +51,20 @@ func ask(s score, question question) score {
 	} else {
 		fmt.Println("Incorrect :-(")
 	}
-	return s
+	answer <- s
 }
-
+func timer(s score, end chan score) {
+	time.Sleep(5 * time.Second)
+	end <- s
+}
 func main() {
 	s := score(0)
 	qs := questions()
 	for _, q := range qs {
-		s = ask(s, q)
+		answer := make(chan score)
+		go ask(s, q, answer)
+		go timer(s, answer)
+		s = <-answer
 	}
 	fmt.Println("Final score", s)
 }
